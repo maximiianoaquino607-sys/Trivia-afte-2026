@@ -6,22 +6,42 @@
 <title>TRIVIA AFTE 2026</title>
 <style>
 body{font-family:system-ui,sans-serif;background:#0f172a;color:white;text-align:center;padding:20px;margin:0}
-.card{background:white;color:#0f172a;max-width:500px;margin:20px auto;padding:25px;border-radius:16px}
+.card{background:white;color:#0f172a;max-width:500px;margin:20px auto;padding:25px;border-radius:16px;box-shadow:0 10px 20px rgba(0,0,0,0.3)}
 h1{color:#38bdf8;margin:0;font-size:32px}
-.btn{width:100%;padding:14px;margin:8px 0;border:none;border-radius:10px;background:#0f172a;color:white;font-size:16px;font-weight:600}
+.btn{width:100%;padding:14px;margin:8px 0;border:none;border-radius:10px;background:#0f172a;color:white;font-size:16px;font-weight:600;cursor:pointer}
+.btn:disabled{opacity:0.5}
 #resultado{font-weight:bold;margin-top:15px;font-size:18px}
+select,input{width:100%;padding:12px;border-radius:10px;border:1px solid #cbd5e1;margin:6px 0;font-size:15px}
+.timer-bg{background:#e2e8f0;height:10px;border-radius:10px;margin:10px 0;overflow:hidden}
+.timer-bar{height:10px;background:#38bdf8;width:100%;transition:width 1s linear}
+.rank{font-size:13px;text-align:left;background:#f8fafc;padding:10px;border-radius:10px;margin-top:10px}
 </style>
 </head>
 <body>
 <h1>TRIVIA AFTE 2026</h1>
 <p>Muestra Anual - Maximiliano Aquino</p>
-<div class="card">
+
+<div id="login" class="card">
+<h2>Antes de jugar</h2>
+<select id="perfil">
+<option>1° Año</option><option>2° Año</option><option>3° Año</option><option>4° Año</option><option>5° Año</option><option>6° Año</option><option>7° Electrónica</option><option>7° Electromecánica</option><option>7° Informática</option><option>7° Química</option><option>Docente</option><option>Visitante</option>
+</select>
+<input id="nombre" placeholder="Tu nombre">
+<button class="btn" style="background:#38bdf8;color:#0f172a" onclick="entrar()">Entrar a jugar - 25s por pregunta</button>
+<div id="rankLocal" class="rank"></div>
+<p style="font-size:11px;margin-top:10px">Link público: maximilianoaquino607-sys.github.io/Trivia-afte-2026/</p>
+</div>
+
+<div id="juego" class="card" style="display:none">
+<div style="display:flex;justify-content:space-between;font-size:13px"><span id="infoCurso"></span><span id="tiempoTxt">25s</span></div>
+<div class="timer-bg"><div id="barra" class="timer-bar"></div></div>
 <h2 id="pregunta"></h2>
 <div id="opciones"></div>
 <div id="resultado"></div>
 <button id="next" class="btn" style="display:none;background:#38bdf8;color:#0f172a" onclick="siguiente()">Siguiente</button>
 </div>
 <p id="puntaje">Puntaje: 0/0</p>
+
 <script>
 const trivia=[
 {q:"¿Qué significa AFTE?",ops:["Futuros Técnicos en Electrónica","Formación Técnica Especializada","Formación Técnico Educativa"],c:1},
@@ -30,12 +50,65 @@ const trivia=[
 {q:"¿Con qué está hecha esta página?",ops:["Python","HTML + JS","Excel"],c:1},
 {q:"¿Objetivo de la muestra?",ops:["Mostrar proyectos","Vender compus","Jugar"],c:0}
 ];
-let i=0,puntos=0;
-const preg=document.getElementById('pregunta'),opc=document.getElementById('opciones'),res=document.getElementById('resultado'),next=document.getElementById('next'),punt=document.getElementById('puntaje');
-function mostrar(){res.textContent='';next.style.display='none';let t=trivia[i];preg.textContent=`${i+1}. ${t.q}`;opc.innerHTML='';t.ops.forEach((op,idx)=>{let b=document.createElement('button');b.className='btn';b.textContent=op;b.onclick=()=>verificar(idx);opc.appendChild(b);});}
-function verificar(idx){let t=trivia[i];if(idx===t.c){res.textContent='✅ ¡Correcto!';res.style.color='green';puntos++;}else{res.textContent=`❌ Era: ${t.ops[t.c]}`;res.style.color='red';}opc.querySelectorAll('button').forEach(b=>b.disabled=true);next.style.display='block';punt.textContent=`Puntaje: ${puntos}/${i+1}`;}
-function siguiente(){i++;if(i<trivia.length)mostrar();else{preg.textContent='¡Trivia finalizada!';opc.innerHTML=`<h2>Tu puntaje: ${puntos}/${trivia.length}</h2><p>Gracias - AFTE 2026</p>`;res.textContent='';next.style.display='none';}}
-mostrar();
+
+let i=0,puntos=0,tiempo=25,timerInt,perfil='',nombre='';
+let ranking=JSON.parse(localStorage.getItem('rankAFTE2026')||'[]');
+
+function verRank(){
+  ranking.sort((a,b)=>b.puntos-a.puntos);
+  let html='<b>🏆 Ranking Local - Mejor puntaje</b><br>';
+  ranking.slice(0,5).forEach((r,k)=>{ html+=`${k+1}. ${r.nombre} (${r.perfil}) - ${r.puntos}/${r.total}<br>` });
+  if(ranking.length==0) html+='Sin puntajes aún';
+  document.getElementById('rankLocal').innerHTML=html;
+}
+verRank();
+
+function entrar(){
+ perfil=document.getElementById('perfil').value;
+ nombre=document.getElementById('nombre').value.trim()||'Anónimo';
+ document.getElementById('login').style.display='none';
+ document.getElementById('juego').style.display='block';
+ document.getElementById('infoCurso').textContent=perfil+' - '+nombre;
+ i=0;puntos=0;
+ mostrar();
+}
+
+const preg=document.getElementById('pregunta'),opc=document.getElementById('opciones'),res=document.getElementById('resultado'),next=document.getElementById('next'),punt=document.getElementById('puntaje'),barra=document.getElementById('barra'),tiempoTxt=document.getElementById('tiempoTxt');
+
+function mostrar(){
+ res.textContent='';next.style.display='none';
+ tiempo=25; clearInterval(timerInt);
+ barra.style.width='100%'; barra.style.background='#38bdf8';
+ tiempoTxt.textContent=tiempo+'s';
+ timerInt=setInterval(()=>{
+   tiempo--; barra.style.width=(tiempo/25*100)+'%'; tiempoTxt.textContent=tiempo+'s';
+   if(tiempo<=7) barra.style.background='red';
+   if(tiempo<=0){ clearInterval(timerInt); verificar(-1); }
+ },1000);
+ let t=trivia[i];preg.textContent=`${i+1}. ${t.q}`;opc.innerHTML='';
+ t.ops.forEach((op,idx)=>{let b=document.createElement('button');b.className='btn';b.textContent=op;b.onclick=()=>{clearInterval(timerInt);verificar(idx);};opc.appendChild(b);});
+}
+function verificar(idx){
+ let t=trivia[i];
+ if(idx===t.c){res.textContent='✅ ¡Correcto!';res.style.color='green';puntos++;}
+ else if(idx===-1){res.textContent=`⏰ ¡Tiempo! Era: ${t.ops[t.c]}`;res.style.color='orange';}
+ else{res.textContent=`❌ Era: ${t.ops[t.c]}`;res.style.color='red';}
+ opc.querySelectorAll('button').forEach(b=>b.disabled=true);
+ next.style.display='block';
+ punt.textContent=`Puntaje: ${puntos}/${i+1}`;
+}
+function siguiente(){
+ i++;
+ if(i<trivia.length) mostrar();
+ else{
+   clearInterval(timerInt);
+   ranking.push({nombre,perfil,puntos,total:trivia.length});
+   localStorage.setItem('rankAFTE2026',JSON.stringify(ranking));
+   preg.textContent='¡Trivia finalizada!';
+   opc.innerHTML=`<h2>Tu puntaje: ${puntos}/${trivia.length}</h2><p>${nombre} - ${perfil}</p><p>Gracias - AFTE 2026</p><button class="btn" onclick="location.reload()">Jugar de nuevo</button><p style="font-size:12px;margin-top:10px">Ranking compartido: para que todos los celus vean el mismo ranking, necesitamos conectar Firebase. Decime y te lo conecto gratis.</p>`;
+   res.textContent='';next.style.display='none';verRank();
+ }
+}
 </script>
 </body>
 </html>
