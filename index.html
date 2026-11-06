@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TRIVIA AFTE 2026</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#0f172a;color:white;text-align:center;padding:20px;margin:0}
+.card{background:white;color:#0f172a;max-width:500px;margin:20px auto;padding:25px;border-radius:16px}
+h1{color:#38bdf8;margin:0;font-size:32px}
+.btn{width:100%;padding:14px;margin:8px 0;border:none;border-radius:10px;background:#0f172a;color:white;font-size:16px;font-weight:600}
+#resultado{font-weight:bold;margin-top:15px;font-size:18px}
+</style>
+</head>
+<body>
+<h1>TRIVIA AFTE 2026</h1>
+<p>Muestra Anual - Maximiliano Aquino</p>
+<div class="card">
+<h2 id="pregunta"></h2>
+<div id="opciones"></div>
+<div id="resultado"></div>
+<button id="next" class="btn" style="display:none;background:#38bdf8;color:#0f172a" onclick="siguiente()">Siguiente</button>
+</div>
+<p id="puntaje">Puntaje: 0/0</p>
+<script>
+const trivia=[
+{q:"¿Qué significa AFTE?",ops:["Futuros Técnicos en Electrónica","Formación Técnica Especializada","Formación Técnico Educativa"],c:1},
+{q:"¿En qué año es la muestra?",ops:["2025","2026","2027"],c:1},
+{q:"¿Qué almacena energía?",ops:["Resistor","Capacitor","Transistor"],c:1},
+{q:"¿Con qué está hecha esta página?",ops:["Python","HTML + JS","Excel"],c:1},
+{q:"¿Objetivo de la muestra?",ops:["Mostrar proyectos","Vender compus","Jugar"],c:0}
+];
+let i=0,puntos=0;
+const preg=document.getElementById('pregunta'),opc=document.getElementById('opciones'),res=document.getElementById('resultado'),next=document.getElementById('next'),punt=document.getElementById('puntaje');
+function mostrar(){res.textContent='';next.style.display='none';let t=trivia[i];preg.textContent=`${i+1}. ${t.q}`;opc.innerHTML='';t.ops.forEach((op,idx)=>{let b=document.createElement('button');b.className='btn';b.textContent=op;b.onclick=()=>verificar(idx);opc.appendChild(b);});}
+function verificar(idx){let t=trivia[i];if(idx===t.c){res.textContent='✅ ¡Correcto!';res.style.color='green';puntos++;}else{res.textContent=`❌ Era: ${t.ops[t.c]}`;res.style.color='red';}opc.querySelectorAll('button').forEach(b=>b.disabled=true);next.style.display='block';punt.textContent=`Puntaje: ${puntos}/${i+1}`;}
+function siguiente(){i++;if(i<trivia.length)mostrar();else{preg.textContent='¡Trivia finalizada!';opc.innerHTML=`<h2>Tu puntaje: ${puntos}/${trivia.length}</h2><p>Gracias - AFTE 2026</p>`;res.textContent='';next.style.display='none';}}
+mostrar();
+</script>
+</body>
+</html>
